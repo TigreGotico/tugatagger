@@ -1,4 +1,56 @@
-from typing import List, Tuple
+from typing import List, Optional, Tuple
+
+try:
+    from tugamorph import PortugueseMorphAnalyzer as _MorphAnalyzer
+    _morph: Optional[_MorphAnalyzer] = None
+
+    def _get_morph() -> _MorphAnalyzer:
+        global _morph
+        if _morph is None:
+            from tugamorph import AnalysisConfig
+            _morph = _MorphAnalyzer(config=AnalysisConfig(use_pos_tagger=False))
+        return _morph
+
+    _HAS_TUGAMORPH = True
+except ImportError:
+    _HAS_TUGAMORPH = False
+
+    def _get_morph():  # type: ignore[misc]
+        return None
+
+
+# UPOS tags returned by tugamorph suffix categories → tugatagger UPOS labels
+_SUFFIX_CAT_TO_POS = {
+    "SuffixCategory.NOUN_ABSTRACT": "NOUN",
+    "SuffixCategory.NOUN_ACTION": "NOUN",
+    "SuffixCategory.NOUN_AGENT": "NOUN",
+    "SuffixCategory.NOUN_PLACE": "NOUN",
+    "SuffixCategory.COLLECTIVE": "NOUN",
+    "SuffixCategory.DIMINUTIVE": "NOUN",
+    "SuffixCategory.AUGMENTATIVE": "NOUN",
+    "SuffixCategory.PEJORATIVE": "NOUN",
+    "SuffixCategory.ADJECTIVE": "ADJ",
+    "SuffixCategory.ADVERB": "ADV",
+    "SuffixCategory.SCIENTIFIC": "NOUN",
+    "SuffixCategory.GENTILICO": "ADJ",
+}
+
+_TENSE_MOOD_TO_POS = {
+    "pres_ind": "VERB",
+    "pret_perf": "VERB",
+    "pret_imperf": "VERB",
+    "imperf": "VERB",
+    "fut_ind": "VERB",
+    "conditional": "VERB",
+    "subj_pres": "VERB",
+    "subj_imperf": "VERB",
+    "subj_fut": "VERB",
+    "imperative": "VERB",
+    "gerund": "VERB",
+    "participle": "VERB",
+    "inf_pessoal": "VERB",
+    "none": "VERB",
+}
 
 
 class TugaTagger:
@@ -166,79 +218,143 @@ class TugaTagger:
 
     @staticmethod
     def _guess_pos(word: str) -> str:
-        """Applies heuristic rules to guess the POS tag."""
+        """Heuristic POS guess for a single word.
+
+        Uses tugamorph morphological analysis when available for better coverage of
+        verbal forms and derivational suffixes.  Falls back to a compact rule table
+        when tugamorph is not installed.
+        """
         lower_word = word.lower()
 
-        # Rule 0: Punctuation
+        # Punctuation / numbers — fast path before any morphology
         if not word.isalnum():
             return "PUNCT"
-
-        # Rule 0.5: Numbers
         if word.isdigit():
             return "NUM"
 
-        # 1. Closed-class words (Functional words that rarely change category)
-        COMMON_WORDS = {
-            # Articles
-            "o": "DET", "a": "DET", "os": "DET", "as": "DET", "um": "DET", "uma": "DET",
-            # Prepositions
-            "de": "ADP", "do": "ADP", "da": "ADP", "em": "ADP", "no": "ADP", "na": "ADP",
-            "por": "ADP", "para": "ADP", "com": "ADP", "sem": "ADP", #"a": "ADP",
-            # Conjunctions
-            "e": "CCONJ", "mas": "CCONJ", "ou": "CCONJ", "que": "SCONJ", "se": "SCONJ",
-            # Pronouns
-            "eu": "PRON", "ele": "PRON", "ela": "PRON", "nós": "PRON", "eles": "PRON",
-            "isso": "PRON", "aquilo": "PRON",
-            # Common Verbs (Auxiliary/Copula)
-            "é": "AUX", "foi": "AUX", "são": "AUX", "está": "AUX", "ser": "AUX", "ter": "AUX",
-            # Adverbs
-            "não": "ADV", "sim": "ADV", "muito": "ADV", "mais": "ADV"
+        # Closed-class function words — highest confidence, check first
+        _CLOSED = {
+            "o": "DET", "a": "DET", "os": "DET", "as": "DET",
+            "um": "DET", "uma": "DET", "uns": "DET", "umas": "DET",
+            "de": "ADP", "do": "ADP", "da": "ADP", "dos": "ADP", "das": "ADP",
+            "em": "ADP", "no": "ADP", "na": "ADP", "nos": "ADP", "nas": "ADP",
+            "por": "ADP", "pelo": "ADP", "pela": "ADP", "pelos": "ADP", "pelas": "ADP",
+            "para": "ADP", "com": "ADP", "sem": "ADP", "sob": "ADP", "sobre": "ADP",
+            "entre": "ADP", "até": "ADP", "após": "ADP", "ante": "ADP",
+            "e": "CCONJ", "mas": "CCONJ", "ou": "CCONJ", "nem": "CCONJ", "porém": "CCONJ",
+            "que": "SCONJ", "se": "SCONJ", "porque": "SCONJ", "embora": "SCONJ",
+            "quando": "SCONJ", "como": "SCONJ",
+            "eu": "PRON", "tu": "PRON", "ele": "PRON", "ela": "PRON",
+            "nós": "PRON", "vós": "PRON", "eles": "PRON", "elas": "PRON",
+            "me": "PRON", "te": "PRON", "se": "PRON", "lhe": "PRON",
+            "nos": "PRON", "vos": "PRON", "lhes": "PRON",
+            "isso": "PRON", "isto": "PRON", "aquilo": "PRON",
+            "este": "PRON", "essa": "PRON", "esse": "PRON", "aquele": "PRON", "aquela": "PRON",
+            "é": "AUX", "foi": "AUX", "são": "AUX", "eram": "AUX",
+            "está": "AUX", "estar": "AUX", "ser": "AUX",
+            "ter": "AUX", "tem": "AUX", "tinha": "AUX", "tido": "AUX",
+            "haver": "AUX", "há": "AUX",
+            "não": "ADV", "sim": "ADV", "muito": "ADV", "mais": "ADV",
+            "já": "ADV", "ainda": "ADV", "sempre": "ADV", "nunca": "ADV",
+            "aqui": "ADV", "aí": "ADV", "ali": "ADV", "lá": "ADV",
+            "hoje": "ADV", "ontem": "ADV", "amanhã": "ADV",
         }
+        if lower_word in _CLOSED:
+            return _CLOSED[lower_word]
 
-        # 2. Suffix Rules (Order matters: check longer suffixes first)
-        SUFFIX_RULES = [
-            ("mente", "ADV"),   # rapidamente
-            ("ando", "VERB"),   # cantando
-            ("endo", "VERB"),   # correndo
-            ("indo", "VERB"),   # partindo
-            ("aram", "VERB"),   # cantaram
-            ("eram", "VERB"),   # correram
-            ("iram", "VERB"),   # partiram
-            ("ava", "VERB"),    # cantava
-            ("ria", "VERB"),    # cantaria
-            ("dor", "NOUN"),    # jogador
-            ("ção", "NOUN"),    # ação
-            ("são", "NOUN"),    # tensão
-            ("dade", "NOUN"),   # cidade
-            ("ismo", "NOUN"),   # realismo
-            ("ista", "NOUN"),   # realista
-            ("oso", "ADJ"),     # formoso
-            ("osa", "ADJ"),     # formosa
-            ("vel", "ADJ"),     # amável
-            ("al", "ADJ"),      # nacional
-            ("ar", "VERB"),     # amar
-            ("er", "VERB"),     # comer
-            ("ir", "VERB"),     # partir (careful with 'ir' the verb itself)
+        # Morphological analysis via tugamorph when available
+        if _HAS_TUGAMORPH:
+            try:
+                morph = _get_morph()
+                result = morph.analyze(lower_word)
+                if result.verbal is not None:
+                    tm = result.verbal.tense_mood or ""
+                    # Distinguish auxiliaries / participles used as adjectives
+                    if tm == "participle":
+                        return "ADJ"
+                    if tm in _TENSE_MOOD_TO_POS:
+                        return _TENSE_MOOD_TO_POS[tm]
+                    return "VERB"
+                if result.suffix is not None:
+                    sfx_str = str(result.suffix[1])
+                    pos = _SUFFIX_CAT_TO_POS.get(sfx_str)
+                    if pos:
+                        return pos
+            except Exception:
+                pass  # never let analysis errors break tagging
+
+        # Fallback suffix table — same coverage as before, used when tugamorph absent
+        _SUFFIX_RULES = [
+            ("mente", "ADV"),
+            ("ando", "VERB"), ("endo", "VERB"), ("indo", "VERB"),
+            ("aram", "VERB"), ("eram", "VERB"), ("iram", "VERB"),
+            ("aram", "VERB"), ("avam", "VERB"), ("iam", "VERB"),
+            ("ava", "VERB"), ("ria", "VERB"),
+            ("ção", "NOUN"), ("são", "NOUN"), ("dade", "NOUN"),
+            ("dor", "NOUN"), ("ismo", "NOUN"), ("ista", "NOUN"),
+            ("oso", "ADJ"), ("osa", "ADJ"), ("vel", "ADJ"), ("al", "ADJ"),
+            ("ar", "VERB"), ("er", "VERB"), ("ir", "VERB"),
         ]
+        for suffix, tag in _SUFFIX_RULES:
+            if lower_word.endswith(suffix) and len(lower_word) > len(suffix):
+                return tag
 
-        # Rule 1: Dictionary Lookup (O(1) speed)
-        if lower_word in COMMON_WORDS:
-            return COMMON_WORDS[lower_word]
-
-        # Rule 2: Suffix Morphology
-        for suffix, tag in SUFFIX_RULES:
-            if lower_word.endswith(suffix):
-                # Exception: prevent very short words triggering rules (e.g. "lar" ending in "ar")
-                if len(lower_word) > len(suffix):
-                    return tag
-
-        # Rule 3: Capitalization (Proper Noun heuristic)
-        # If it's not the start of the sentence (hard to know context-free here) but matches Title case
-        if word[0].isupper() and word[1:].islower():
+        # Capitalised word not at start → likely proper noun
+        if word[0].isupper() and len(word) > 1 and word[1:].islower():
             return "PROPN"
 
-        # Rule 4: Fallback
         return "NOUN"
+
+
+def get_verb_tense(word: str) -> Optional[dict]:
+    """Return structured verbal morphology for *word*, or None if not a verb.
+
+    Requires tugamorph to be installed.  When it is, returns a dict with the keys:
+
+        tense_mood      str   — e.g. "pres_ind", "pret_perf", "subj_imperf", "gerund",
+                                     "participle", "conditional", "fut_ind" …
+        person          int|None  — 1, 2, or 3
+        number          str|None  — "sg" or "pl"
+        conjugation     int|None  — 1 (-ar), 2 (-er), 3 (-ir)
+        is_past_participle bool
+        lemma           str|None  — infinitive guess, e.g. "cantar"
+        is_irregular    bool
+
+    Returns None when:
+        - tugamorph is not installed
+        - the word is not recognised as a verbal form
+        - analysis raises an exception
+
+    Example::
+
+        >>> get_verb_tense("cantavam")
+        {'tense_mood': 'imperf', 'person': 3, 'number': 'pl', 'conjugation': 1,
+         'is_past_participle': False, 'lemma': 'cantar', 'is_irregular': False}
+
+        >>> get_verb_tense("disseram")
+        {'tense_mood': 'pret_perf', 'person': 3, 'number': 'pl', 'conjugation': None,
+         'is_past_participle': False, 'lemma': 'dizer', 'is_irregular': True}
+    """
+    if not _HAS_TUGAMORPH:
+        return None
+    try:
+        morph = _get_morph()
+        result = morph.analyze(word.lower())
+        v = result.verbal
+        if v is None:
+            return None
+        return {
+            "tense_mood": v.tense_mood,
+            "person": v.person,
+            "number": v.number,
+            "conjugation": v.conjugation_class,
+            "is_past_participle": v.is_past_participle,
+            "lemma": result.lemma_guess,
+            "is_irregular": v.is_irregular,
+        }
+    except Exception:
+        return None
+
 
 if __name__ == "__main__":
     # Initialize with 'auto' to use the best available engine

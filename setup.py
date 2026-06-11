@@ -43,6 +43,7 @@ setup(
         "spacy": ["spacy"],
         "lexicon": ["tugalex"],
         "brill": ["brill_postagger"],
+        "tugamorph": ["tugamorph"],
     },
     classifiers=[
         "Programming Language :: Python :: 3",
