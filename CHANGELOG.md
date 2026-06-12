@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.0a1](https://github.com/TigreGotico/tugatagger/tree/0.1.0a1) (2026-06-12)
+
+[Full Changelog](https://github.com/TigreGotico/tugatagger/compare/0.0.2a1...0.1.0a1)
+
+**Merged pull requests:**
+
+- feat: add Stanza neural POS-tagging backend [\#4](https://github.com/TigreGotico/tugatagger/pull/4) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.0.2a1](https://github.com/TigreGotico/tugatagger/tree/0.0.2a1) (2026-05-29)
 
 [Full Changelog](https://github.com/TigreGotico/tugatagger/compare/0.0.1...0.0.2a1)
