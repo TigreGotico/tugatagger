@@ -57,27 +57,34 @@ class TugaTagger:
     """
     A unified interface for Portuguese Part-of-Speech (POS) tagging.
 
-    Supports multiple backends including spaCy and Brill-style taggers.
+    Supports multiple backends: spaCy, Stanza, Brill-style, and lexicon taggers.
     The 'auto' mode provides a fallback mechanism to ensure tagging works
     even if specific dependencies are missing.
     """
 
-    def __init__(self, engine: str = "auto", spacy_model: str = "pt_core_news_lg"):
+    def __init__(self, engine: str = "auto", spacy_model: str = "pt_core_news_lg",
+                 stanza_lang: str = "pt"):
         """
         Create a TugaTagger configured for the chosen tagging engine and optionally preload backend models.
 
         Parameters:
-            engine (str): Tagging engine to use: "spacy", "brill", "dummy", or "auto".
+            engine (str): Tagging engine to use: "spacy", "stanza", "brill", "lexicon", "dummy", or "auto".
                 - "spacy": preload the spaCy model in strict mode.
+                - "stanza": preload the Stanza neural pipeline in strict mode.
                 - "brill": preload the Brill tagger in strict mode.
-                - "auto": attempt to preload both spaCy and Brill (not strict).
+                - "lexicon": preload the tugalex lexicon in strict mode.
+                - "auto": attempt to preload spaCy, Brill and lexicon (not strict).
             spacy_model (str): Name of the spaCy Portuguese model to load when using spaCy (default "pt_core_news_lg").
+            stanza_lang (str): Language code for the Stanza pipeline (default "pt").
 
         Notes:
             Load failures for a backend will be propagated when that backend is loaded in strict mode.
+            Stanza is a heavy, high-accuracy neural backend; it is only preloaded for engine="stanza"
+            (not in "auto") to avoid an unexpected model download.
         """
         self.engine = engine
-        self._spacy = self._brill = self._lexicon = None
+        self._spacy = self._brill = self._lexicon = self._stanza = None
+        self._stanza_lang = stanza_lang
 
         if engine in ["spacy", "auto"]:
             self.load_spacy(spacy_model, strict=(engine == "spacy"))
@@ -85,6 +92,8 @@ class TugaTagger:
             self.load_brill(strict=(engine == "brill"))
         if engine in ["lexicon", "auto"]:
             self.load_lexicon(strict=(engine == "lexicon"))
+        if engine == "stanza":
+            self.load_stanza(stanza_lang, strict=True)
 
     def load_lexicon(self, strict: bool = True):
         try:
@@ -93,6 +102,21 @@ class TugaTagger:
         except Exception as e:
             if strict:
                 raise e
+
+    def tag_stanza(self, sentence: str) -> List[Tuple[str, str]]:
+        """
+        Tag a sentence using the Stanza Portuguese neural pipeline.
+
+        If the Stanza pipeline is not yet loaded, it will be initialized automatically.
+
+        Returns:
+            List[Tuple[str, str]]: A list of (token_text, UPOS) tuples, one per token,
+            where the tag is Stanza's universal part-of-speech label.
+        """
+        if self._stanza is None:
+            self.load_stanza(self._stanza_lang, strict=True)
+        doc = self._stanza(sentence)
+        return [(word.text, word.upos) for sent in doc.sentences for word in sent.words]
 
     def load_spacy(self, spacy_model: str = "pt_core_news_lg", strict: bool = True):
         """
@@ -108,6 +132,31 @@ class TugaTagger:
         try:
             import spacy
             self._spacy = spacy.load(spacy_model, disable=["ner", "parser"])
+        except Exception as e:
+            if strict:
+                raise e
+
+    def load_stanza(self, lang: str = "pt", strict: bool = True):
+        """
+        Load and cache a Stanza Portuguese neural pipeline (tokenize + POS).
+
+        Stanza is a high-accuracy neural tagger. Install with
+        ``pip install tugatagger[stanza]``; the Portuguese models are downloaded
+        automatically on first use (a few hundred MB).
+
+        Parameters:
+            lang (str): Stanza language code (default "pt").
+            strict (bool): If True, re-raise any exception encountered while loading;
+                if False, suppress it and leave `self._stanza` as None.
+
+        Side effects:
+            Assigns the loaded Stanza pipeline to `self._stanza`.
+        """
+        try:
+            import stanza
+            self._stanza = stanza.Pipeline(
+                lang, processors="tokenize,pos", verbose=False
+            )
         except Exception as e:
             if strict:
                 raise e
@@ -142,6 +191,7 @@ class TugaTagger:
             "dummy": self.tag_dummy,
             "brill": self.tag_brill,
             "spacy": self.tag_spacy,
+            "stanza": self.tag_stanza,
             "lexicon": self.tag_lexicon
         }
         handler = engines.get(self.engine)
