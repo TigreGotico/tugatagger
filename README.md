@@ -7,7 +7,7 @@
 ## 🚀 Key Features
 
 * **Unified API:** Use the same `tag()` method regardless of the underlying engine.
-* **Multiple Backends:** Supports **spaCy**, **Brill-style** taggers, and **Lexicon-based** lookups.
+* **Multiple Backends:** Supports **spaCy**, **Stanza** (neural), **Brill-style** taggers, and **Lexicon-based** lookups.
 * **Robust Fallback ("Auto" Mode):** Automatically tries the best available engine, falling back to heuristic-based "guessing" if dependencies are missing.
 * **Zero-Dependency Mode:** Includes a built-in rule-based tagger for environments where installing heavy NLP models isn't feasible.
 
@@ -23,6 +23,9 @@ pip install tugatagger[brill]
 # To use spaCy
 pip install tugatagger[spacy]
 python -m spacy download pt_core_news_lg
+
+# To use Stanza (neural; downloads the pt models on first run)
+pip install tugatagger[stanza]
 ```
 
 ---
@@ -52,6 +55,7 @@ You can force a specific backend for benchmarking or production stability.
 | Engine | Description                                    | Best For...                                |
 | --- |------------------------------------------------|--------------------------------------------|
 | `spacy` | Uses `pt_core_news_lg` (or your choice).       | High accuracy & context awareness.         |
+| `stanza` | Stanford neural pipeline (downloads pt models). | Highest accuracy; heavier & slower.        |
 | `brill` | Transformation-based learning tagger.          | Fast performance with good accuracy.       |
 | `lexicon` | Dictionary lookup from `tugalex`.              | word-lookup tagging.                       |
 | `dummy` | Heuristics based on suffixes and common words. | Low-resource / No-dependency environments. |
