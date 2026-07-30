@@ -1,8 +1,6 @@
-# Quickstart — zero to hero
+# Quickstart
 
-`tugatagger` gives you one Portuguese part-of-speech tagger interface —
-`TugaTagger` — over several swappable backends. You always call the same
-`tag()` method and get back the same shape, no matter which engine does the work.
+TugaTagger gives you one Portuguese part-of-speech tagger interface, `TugaTagger`, over several swappable backends. You always call the same `tag()` method and get back the same shape, no matter which engine does the work.
 
 ## 1. Install
 
@@ -14,14 +12,11 @@ pip install tugatagger[spacy]       # + spaCy; then download a model:
 python -m spacy download pt_core_news_lg
 ```
 
-The core install has zero NLP dependencies and always works — it ships a
-rule-based fallback tagger. Install an extra only for the backend you want.
+The core install has no NLP dependencies and always works. It ships a rule-based fallback tagger. Install an extra only for the backend you want.
 
 ## 2. The one thing to understand
 
-A `TugaTagger` is configured with an `engine` at construction time, and every
-call to `tag(sentence)` returns a `List[Tuple[str, str]]` — a list of
-`(token, POS_tag)` pairs:
+You configure a `TugaTagger` with an `engine` at construction time. Every call to `tag(sentence)` returns a `List[Tuple[str, str]]`, a list of `(token, POS_tag)` pairs:
 
 ```python
 from tugatagger import TugaTagger
@@ -41,14 +36,13 @@ o            -> DET
 muro.        -> PUNCT
 ```
 
-The tags are [Universal POS tags](https://universaldependencies.org/u/pos/):
+The tags follow the [Universal POS tags](https://universaldependencies.org/u/pos/) scheme:
 `DET`, `NOUN`, `VERB`, `ADJ`, `ADV`, `ADP`, `PRON`, `AUX`, `PROPN`, `NUM`,
 `PUNCT`, `CCONJ`, `SCONJ`.
 
 ## 3. Pick an engine
 
-One knob — `engine` — with five values. Each is a backend that fills in the
-same `(token, tag)` contract.
+One setting, `engine`, takes five values. Each value selects a backend that fills in the same `(token, tag)` contract.
 
 ```python
 TugaTagger(engine="auto")      # default: best available backend, with fallback
@@ -58,17 +52,13 @@ TugaTagger(engine="lexicon")   # tugalex dictionary lookup
 TugaTagger(engine="dummy")     # rule-based heuristic, no dependencies
 ```
 
-`auto` tries `brill`, then `spacy`, then `lexicon`, and falls back to `dummy`
-if none of them load. So the same code runs whether or not the heavy backends
-are installed — you just get better tags when they are.
+`auto` tries `brill`, then `spacy`, then `lexicon`, and falls back to `dummy` if none of them load. The same code runs whether or not the heavy backends are installed. You get better tags when they are installed.
 
-See [api.md](api.md) for what each engine returns and [advanced.md](advanced.md)
-for choosing between them.
+See [api.md](api.md) for what each engine returns and [advanced.md](advanced.md) for how to choose between them.
 
 ## 4. First real call
 
-If you have the Brill backend installed, it disambiguates by context where the
-heuristic cannot:
+If you have the Brill backend installed, it disambiguates by context where the heuristic cannot:
 
 ```python
 from tugatagger import TugaTagger
@@ -79,14 +69,12 @@ print(tagger.tag("O gato preto pulou o muro."))
 #  ('pulou', 'VERB'), ('o', 'DET'), ('muro', 'NOUN'), ('.', 'PUNCT')]
 ```
 
-No backend installed? The `dummy` engine proves the plumbing with no setup:
+If no backend is installed, the `dummy` engine proves the plumbing with no setup:
 
 ```python
 print(TugaTagger(engine="dummy").tag("Ela correu rapidamente."))
 # [('Ela', 'PROPN'), ('correu', 'NOUN'), ('rapidamente.', 'PUNCT')]
 ```
 
-## Where next
-
-- [api.md](api.md) — every class, method, kwarg and the return contract
-- [advanced.md](advanced.md) — engine selection, the heuristic rules, benchmarking, gotchas
+---
+[Home](../README.md) · [API reference →](api.md)
