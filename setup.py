@@ -41,8 +41,10 @@ setup(
     install_package_data=True,
     extras_require={
         "spacy": ["spacy"],
+        "stanza": ["stanza"],
         "lexicon": ["tugalex"],
         "brill": ["brill_postagger"],
+        "tugamorph": ["tugamorph"],
     },
     classifiers=[
         "Programming Language :: Python :: 3",
