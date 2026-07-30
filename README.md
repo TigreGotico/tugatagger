@@ -1,21 +1,17 @@
-# TugaTagger 🇵🇹
+# TugaTagger
 
-**TugaTagger** is a unified, lightweight wrapper for Portuguese Part-of-Speech (POS) tagging. It provides a standardized interface to swap between different NLP backends, making it ideal for benchmarking different approaches or maintaining consistency across multiple microservices and repositories.
+TugaTagger is a wrapper for Portuguese part-of-speech (POS) tagging. It gives you one interface over several backends, so you can swap engines without changing your code. Use it to benchmark different tagging approaches or to keep tagging consistent across multiple services.
 
----
+## Features
 
-## 🚀 Key Features
+- One `tag()` method works the same way regardless of the backend.
+- Supports spaCy, Stanza (neural), a Brill-style tagger, and a lexicon lookup.
+- The `auto` engine tries the best available backend first, then falls back to a heuristic tagger if no backend is installed.
+- The heuristic tagger has no dependencies, so it always works, even with no NLP models installed.
 
-* **Unified API:** Use the same `tag()` method regardless of the underlying engine.
-* **Multiple Backends:** Supports **spaCy**, **Stanza** (neural), **Brill-style** taggers, and **Lexicon-based** lookups.
-* **Robust Fallback ("Auto" Mode):** Automatically tries the best available engine, falling back to heuristic-based "guessing" if dependencies are missing.
-* **Zero-Dependency Mode:** Includes a built-in rule-based tagger for environments where installing heavy NLP models isn't feasible.
+## Installation
 
----
-
-## 📦 Installation
-
-*(Note: Install the backends you intend to use)*
+Install the backend you plan to use.
 
 ```bash
 pip install tugatagger[brill]
@@ -28,13 +24,11 @@ python -m spacy download pt_core_news_lg
 pip install tugatagger[stanza]
 ```
 
----
+## Usage
 
-## 🛠 Usage
+### Quick start
 
-### Quick Start
-
-The `auto` engine is the default. It attempts to use spaCy or Brill first and falls back to a heuristic "dummy" tagger if they aren't installed.
+The `auto` engine is the default. It tries spaCy or Brill first, then falls back to a heuristic tagger if neither is installed.
 
 ```python
 from tugatagger import TugaTagger
@@ -48,17 +42,17 @@ for word, pos in tags:
 
 ```
 
-### Choosing a Specific Engine
+### Choosing a specific engine
 
-You can force a specific backend for benchmarking or production stability.
+Force a specific backend for benchmarking or for production stability.
 
-| Engine | Description                                    | Best For...                                |
+| Engine | Description                                    | Best for...                                |
 | --- |------------------------------------------------|--------------------------------------------|
-| `spacy` | Uses `pt_core_news_lg` (or your choice).       | High accuracy & context awareness.         |
-| `stanza` | Stanford neural pipeline (downloads pt models). | Highest accuracy; heavier & slower.        |
+| `spacy` | Uses `pt_core_news_lg` (or your choice).       | High accuracy and context awareness.       |
+| `stanza` | Stanford neural pipeline (downloads pt models). | Highest accuracy; heavier and slower.      |
 | `brill` | Transformation-based learning tagger.          | Fast performance with good accuracy.       |
-| `lexicon` | Dictionary lookup from `tugalex`.              | word-lookup tagging.                       |
-| `dummy` | Heuristics based on suffixes and common words. | Low-resource / No-dependency environments. |
+| `lexicon` | Dictionary lookup from `tugalex`.              | Word-lookup tagging.                       |
+| `dummy` | Heuristics based on suffixes and common words. | Low-resource or no-dependency environments. |
 
 ```python
 # Force spaCy with a specific model
@@ -66,25 +60,29 @@ tagger = TugaTagger(engine="spacy", spacy_model="pt_core_news_sm")
 
 ```
 
----
+## How the heuristic tagger works
 
-## 🧠 How the Heuristic Tagger Works
+When you use `engine="dummy"`, or when a backend falls back to it, TugaTagger applies a multi-stage guessing rule:
 
-When using `engine="dummy"` or as a final fallback, TugaTagger uses a multi-stage guessing logic:
+1. Identify punctuation (`PUNCT`) and numbers (`NUM`).
+2. Look up common Portuguese functional words (for example, "o", "de", "com", "mas").
+3. Analyze word endings (for example, `-mente` maps to `ADV`, `-ar`/`-er`/`-ir` maps to `VERB`, `-ção` maps to `NOUN`).
+4. Tag capitalized words as `PROPN` (proper nouns).
+5. Tag anything left over as `NOUN`.
 
-1. **Punctuation/Numbers:** Identifies `PUNCT` and `NUM`.
-2. **Closed-class Lookups:** Identifies common Portuguese functional words (e.g., "o", "de", "com", "mas").
-3. **Suffix Morphology:** Analyzes word endings (e.g., `-mente` → `ADV`, `-ar/-er/-ir` → `VERB`, `-ção` → `NOUN`).
-4. **Capitalization:** Heuristic for `PROPN` (Proper Nouns).
-5. **Default:** Falls back to `NOUN`.
+## Related projects
 
----
+- [tugalex](https://github.com/TigreGotico/tugalex) — the Portuguese lexicon used by the `lexicon` backend.
+- [tugamorph](https://github.com/TigreGotico/tugamorph) — Portuguese morphological analysis, an optional extra.
 
-## 🤝 Contributing
+## Contributing
 
-If you'd like to add a new engine (e.g., Stanza or NLTK):
+To add a new engine (for example, Stanza or NLTK):
 
 1. Add a `tag_newengine` method to the `TugaTagger` class.
 2. Update the `engines` dictionary in the `tag()` method.
-3. Add the corresponding loading logic in `__init__`.
+3. Add the matching loading logic in `__init__`.
 
+## License
+
+MIT.
