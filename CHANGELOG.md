@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.0a3](https://github.com/TigreGotico/tugatagger/tree/0.1.0a3) (2026-09-26)
+
+[Full Changelog](https://github.com/TigreGotico/tugatagger/compare/0.1.0a2...0.1.0a3)
+
+**Merged pull requests:**
+
+- Configure Renovate [\#1](https://github.com/TigreGotico/tugatagger/pull/1) ([renovate[bot]](https://github.com/apps/renovate))
+
 ## [0.1.0a2](https://github.com/TigreGotico/tugatagger/tree/0.1.0a2) (2026-07-30)
 
 [Full Changelog](https://github.com/TigreGotico/tugatagger/compare/0.1.0a1...0.1.0a2)
