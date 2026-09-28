@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.0a4](https://github.com/TigreGotico/tugatagger/tree/0.1.0a4) (2026-09-28)
+
+[Full Changelog](https://github.com/TigreGotico/tugatagger/compare/0.1.0a3...0.1.0a4)
+
+**Merged pull requests:**
+
+- ci: run the test suite in CI [\#8](https://github.com/TigreGotico/tugatagger/pull/8) ([openvoiceos-bot](https://github.com/openvoiceos-bot))
+
 ## [0.1.0a3](https://github.com/TigreGotico/tugatagger/tree/0.1.0a3) (2026-09-26)
 
 [Full Changelog](https://github.com/TigreGotico/tugatagger/compare/0.1.0a2...0.1.0a3)
