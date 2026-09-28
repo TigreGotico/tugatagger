@@ -1,0 +1,5 @@
+TODO.md
+ROADMAP.md
+tugatagger.egg-info/
+__pycache__/
+*.pyc
