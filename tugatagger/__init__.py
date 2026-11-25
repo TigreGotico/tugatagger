@@ -248,10 +248,9 @@ class TugaTagger:
         tokenize = lambda k: k.lower().replace(".", " .").replace("!", " !").replace("?", " ?").split()
 
         for word in tokenize(sentence):
-            if word in self._lexicon.possible_postags:
-                possibilities = self._lexicon.possible_postags[word]
+            if word in self._lexicon.homographs:
                 # TODO: how to choose postag? use surrounding context
-                tagged.append((word, possibilities[0]))
+                tagged.append((word, next(iter(self._lexicon.homographs[word]))))
             else:
                 tagged.append((word, self._guess_pos(word)))
         return tagged
