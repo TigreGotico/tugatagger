@@ -42,7 +42,7 @@ setup(
     extras_require={
         "spacy": ["spacy"],
         "stanza": ["stanza"],
-        "lexicon": ["tugalex"],
+        "lexicon": ["tugalex>=2.5.10a2"],
         "brill": ["brill_postagger"],
         "tugamorph": ["tugamorph"],
     },
@@ -53,5 +53,5 @@ setup(
         "Topic :: Scientific/Engineering :: Artificial Intelligence",
         "Natural Language :: Portuguese",
     ],
-    python_requires='>=3.7',
+    python_requires='>=3.11',
 )
