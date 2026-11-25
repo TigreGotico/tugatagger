@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.1a1](https://github.com/TigreGotico/tugatagger/tree/0.1.1a1) (2026-11-25)
+
+[Full Changelog](https://github.com/TigreGotico/tugatagger/compare/0.1.0a4...0.1.1a1)
+
+**Merged pull requests:**
+
+- fix: tag lexicon words from the tugalex homograph table [\#17](https://github.com/TigreGotico/tugatagger/pull/17) ([openvoiceos-bot](https://github.com/openvoiceos-bot))
+
 ## [0.1.0a4](https://github.com/TigreGotico/tugatagger/tree/0.1.0a4) (2026-09-28)
 
 [Full Changelog](https://github.com/TigreGotico/tugatagger/compare/0.1.0a3...0.1.0a4)
