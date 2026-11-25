@@ -56,15 +56,15 @@ Because the heuristic is context-free, it tags the first word of a sentence as `
 
 ## The lexicon backend
 
-`tag_lexicon` lowercases the sentence, splits trailing `.`, `!`, `?` into their own tokens, and looks each token up in `tugalex`. The lexicon stores *all* possible tags for a word. This backend takes the **first** one, with no disambiguation:
+`tag_lexicon` lowercases the sentence and splits trailing `.`, `!`, `?` into their own tokens. A token in the `tugalex` homograph table takes the first tag the table lists for it, with no disambiguation:
 
 ```python
 import tugalex
 lex = tugalex.TugaLexicon()
-print(lex.possible_postags["o"])   # ['DET', 'PRON']  -> backend picks 'DET'
+print(lex.homographs["para"])   # {'ADP': 'ˈpɐɾɐ', 'VERB': 'ˈpaɾɐ'}  -> backend picks 'ADP'
 ```
 
-Words absent from the lexicon fall through to `_guess_pos`, so the lexicon backend degrades gracefully on out-of-vocabulary tokens.
+Every other token goes to `_guess_pos`.
 
 ## Benchmarking across engines
 
